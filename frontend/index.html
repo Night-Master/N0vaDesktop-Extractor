@@ -4,31 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文件转换器</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
+            font-family: Arial, sans-serif;
             padding: 20px;
+            background-color: #f8f9fa;
         }
         .container {
             max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            color: #dc3545;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">文件转换器</h1>
+        <h1>文件转换器</h1>
         <form id="convertForm" class="mt-4">
             <div class="form-group">
                 <label for="sourceDir">源目录:</label>
                 <input type="text" class="form-control" id="sourceDir" name="sourceDir" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">转换文件</button>
+            <button type="submit" class="btn-primary btn-block">转换文件</button>
         </form>
         <div id="message" class="mt-3"></div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         document.getElementById('convertForm').addEventListener('submit', function(event) {
             event.preventDefault();
