@@ -30,6 +30,7 @@
             padding: 10px;
             border: 1px solid #ced4da;
             border-radius: 4px;
+            box-sizing: border-box;
         }
         .btn-primary {
             width: 100%;
@@ -43,10 +44,47 @@
         .btn-primary:hover {
             background-color: #0056b3;
         }
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
         #message {
             margin-top: 15px;
             text-align: center;
             color: #dc3545;
+        }
+        #scanStatus {
+            margin: 10px 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        #rescanBtn {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            margin-left: 8px;
+            text-decoration: underline;
+        }
+        .dir-item {
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            word-break: break-all;
+            background-color: #f8f9fa;
+        }
+        .dir-item:hover {
+            border-color: #007bff;
+            background-color: #e7f1ff;
+        }
+        .dir-item.selected {
+            border-color: #007bff;
+            background-color: #cce5ff;
         }
     </style>
 </head>
@@ -55,23 +93,78 @@
         <h1>文件转换器</h1>
         <form id="convertForm" class="mt-4">
             <div class="form-group">
-                <label for="sourceDir">源目录:</label>
-                <input type="text" class="form-control" id="sourceDir" name="sourceDir" required>
+                <label for="sourceDir">源目录（留空则自动使用扫描到的目录）:</label>
+                <input type="text" class="form-control" id="sourceDir" name="sourceDir" placeholder="留空自动扫描，或点击下方扫描结果填入">
             </div>
-            <button type="submit" class="btn-primary btn-block">转换文件</button>
+            <div id="scanStatus">正在自动扫描常见安装路径...</div>
+            <div id="dirList"></div>
+            <button type="submit" class="btn-primary btn-block" id="convertBtn">转换文件</button>
         </form>
         <div id="message" class="mt-3"></div>
     </div>
 
     <script>
+        const sourceDirInput = document.getElementById('sourceDir');
+        const scanStatus = document.getElementById('scanStatus');
+        const dirList = document.getElementById('dirList');
+        const message = document.getElementById('message');
+        const convertBtn = document.getElementById('convertBtn');
+
+        function selectDir(dir, item) {
+            sourceDirInput.value = dir;
+            document.querySelectorAll('.dir-item').forEach(el => el.classList.remove('selected'));
+            if (item) item.classList.add('selected');
+        }
+
+        function appendRescanBtn() {
+            const btn = document.createElement('button');
+            btn.id = 'rescanBtn';
+            btn.type = 'button';
+            btn.textContent = '重新扫描';
+            btn.addEventListener('click', scanDirs);
+            scanStatus.appendChild(btn);
+        }
+
+        async function scanDirs() {
+            scanStatus.textContent = '正在自动扫描常见安装路径...';
+            dirList.innerHTML = '';
+            try {
+                const resp = await fetch('/scan');
+                const data = await resp.json();
+                const dirs = data.dirs || [];
+                if (dirs.length === 0) {
+                    scanStatus.textContent = '未找到人工桌面缓存目录，请手动输入源目录';
+                    appendRescanBtn();
+                    return;
+                }
+                scanStatus.textContent = '找到 ' + dirs.length + ' 个缓存目录，点击填入：';
+                appendRescanBtn();
+                dirs.forEach(dir => {
+                    const item = document.createElement('div');
+                    item.className = 'dir-item';
+                    item.textContent = dir;
+                    item.title = '点击填入';
+                    item.addEventListener('click', () => selectDir(dir, item));
+                    dirList.appendChild(item);
+                });
+                // 只找到一个时直接填入，少点一下
+                if (dirs.length === 1) {
+                    selectDir(dirs[0], dirList.firstChild);
+                }
+            } catch (e) {
+                scanStatus.textContent = '扫描失败: ' + e;
+                appendRescanBtn();
+            }
+        }
+
+        window.addEventListener('load', scanDirs);
+
         document.getElementById('convertForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            const sourceDir = document.getElementById('sourceDir').value;
-
-            if (sourceDir === "") {
-                document.getElementById('message').textContent = '错误: 请输入源目录';
-                return;
-            }
+            convertBtn.disabled = true;
+            convertBtn.textContent = '转换中...';
+            message.style.color = '#dc3545';
+            message.textContent = '';
 
             fetch('/convert', {
                 method: 'POST',
@@ -79,19 +172,24 @@
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: new URLSearchParams({
-                    sourceDir: sourceDir
+                    sourceDir: sourceDirInput.value
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    document.getElementById('message').textContent = '错误: ' + data.error;
+                    message.textContent = '错误: ' + data.error;
                 } else {
-                    document.getElementById('message').textContent = '成功: ' + data.message;
+                    message.style.color = '#28a745';
+                    message.textContent = '成功: ' + data.message;
                 }
             })
             .catch(error => {
-                document.getElementById('message').textContent = '错误: ' + error;
+                message.textContent = '错误: ' + error;
+            })
+            .finally(() => {
+                convertBtn.disabled = false;
+                convertBtn.textContent = '转换文件';
             });
         });
     </script>
